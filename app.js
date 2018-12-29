@@ -7,12 +7,14 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const expressGraphQL = require('express-graphql');
 const { buildSchema } = require('graphql');
+const mongoose = require('mongoose');
+require('dotenv').config()
+
+const Event = require('./models/event');
 
 const app = express();
 
 app.use(bodyParser.json());
-
-const events = [];
 
 // Setup GraphQL Path and Schema
 app.use('/api', expressGraphQL({
@@ -47,24 +49,31 @@ app.use('/api', expressGraphQL({
     `),
     rootValue: {
         events: () => {
-            return events;
+            return Event.find()
+                .then(events => {
+                    return events.map(event => {
+                        return { ...event._doc, _id: event.id };
+                    });
+                }).catch(err => {
+                    throw err;
+                });
         },
         createEvent: (args) => {
-            const event = {
-                _id: Math.random().toString(),
+            const event = new Event({
                 title: args.eventInput.title,
                 description: args.eventInput.description,
                 price: +args.eventInput.price,
-                date: new Date().toISOString()
-            };
-            events.push(event);
-            return event;
+                date: new Date(args.eventInput.date)
+            });
+            return event.save()
+                .then(result => { return { ...result._doc } })
+                .catch(err => { throw err });
         }
     },
     graphiql: true
 }),
 );
 
-app.listen(4000, () => {
-    console.log(`Server Started on Port 4000`);
-});
+mongoose.connect(process.env.CONNECTION_URL).
+    then(() => app.listen(4000))
+    .catch(err => console.log(err));
