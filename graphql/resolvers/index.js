@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const Event = require('../../models/event');
 const User = require('../../models/user');
 
+// Get All Events Data For Given Event IDs Array
 const events = async eventIds => {
   try {
     const events = await Event.find({ _id: { $in: eventIds } });
@@ -20,6 +21,7 @@ const events = async eventIds => {
   }
 };
 
+// Get All Users Data For Given User IDs Array
 const user = async userId => {
   try {
     const user = await User.findById(userId);
