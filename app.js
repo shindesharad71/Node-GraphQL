@@ -8,9 +8,11 @@ const bodyParser = require('body-parser');
 const expressGraphQL = require('express-graphql');
 const { buildSchema } = require('graphql');
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 require('dotenv').config()
 
 const Event = require('./models/event');
+const User = require('./models/user')
 
 const app = express();
 
@@ -27,11 +29,22 @@ app.use('/api', expressGraphQL({
         date: String!
     }
 
+    type User {
+        _id: ID!
+        email: String!,
+        password: String
+    }
+
     input EventInput {
         title: String!
         description: String!
         price: Float!
         date: String!
+    }
+
+    input UserInput {
+        email: String!
+        password: String
     }
 
     type RootQuery {
@@ -40,6 +53,7 @@ app.use('/api', expressGraphQL({
 
     type RootMutation {
         createEvent(eventInput: EventInput): Event
+        createUser(userInput: UserInput): User
     }
 
     schema {
@@ -63,11 +77,26 @@ app.use('/api', expressGraphQL({
                 title: args.eventInput.title,
                 description: args.eventInput.description,
                 price: +args.eventInput.price,
-                date: new Date(args.eventInput.date)
+                date: new Date(args.eventInput.date),
+                creator: '5c285f6d4c60c521dfc29cc1'
             });
             return event.save()
                 .then(result => { return { ...result._doc } })
                 .catch(err => { throw err });
+        },
+        createUser: args => {
+            return bcrypt.hash(args.userInput.password, 12)
+                .then(hashedPassword => {
+                    const user = new User({
+                        email: args.userInput.email,
+                        password: hashedPassword
+                    });
+                    return user.save();
+                })
+                .then(result => { return { ...result._doc, password: null, _id: result.id } })
+                .catch(err => {
+                    throw err;
+                });
         }
     },
     graphiql: true
