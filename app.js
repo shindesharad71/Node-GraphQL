@@ -21,7 +21,7 @@ app.use(
 mongoose
   .connect(
     `${process.env.MONGO_URL}${process.env.MONGO_DB}`
-  , {useNewUrlParser: true})
+    , { useNewUrlParser: true })
   .then(() => {
     app.listen(3000);
   })
